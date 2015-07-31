@@ -1,0 +1,80 @@
+* {
+  font-family: 'RobotoDraft';
+}
+
+.hidden {
+  position: absolute;
+  height: 1px;
+  width: 1px;
+  overflow: hidden;
+  clip: rect(1px,1px,1px,1px);
+}
+
+.home {
+  color: blue;
+}
+
+// Button styles. Nested to override
+.md-button.md-raised {
+    color: $teal-500;
+    background-color: $teal-100;
+    
+  &.join-channel,
+  &.become-dj,
+  &.become-listener {
+    width: 100%;
+    margin: 0 auto 15px;
+  }
+}
+
+.channel-name {
+  color: $teal-500;
+}
+
+#channel {
+  border-color: $teal-700;
+}
+
+// Input selector override
+md-input-container:not(.md-input-invalid).md-input-focused label {
+  color: $teal-700;
+}
+
+.header-links {
+  margin-bottom: 15px;
+  // padding-bottom: 15px;
+  // border-bottom: 1px solid $teal-700;
+}
+
+.main-wrapper {
+  height: 100%;
+  padding: 10px;
+  background-color: $teal-50;
+}
+
+.main-header {
+  text-align: center;
+  margin-bottom: 15px;
+}
+
+.header-rows {
+  margin: 0 auto;
+  background-color: $teal-100;
+  list-style: none;
+  padding: 10px;
+  border-radius: 5px;
+}
+
+.info-header {
+  margin: 0;
+  color: $teal-700;
+  font-family: 'RobotoDraft';
+  display: inline-block;
+  font-weight: lighter;
+  font-size: 16px;
+}
+
+.glyph {
+  color: $teal-800;
+  vertical-align: middle;
+}
