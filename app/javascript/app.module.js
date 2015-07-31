@@ -13,11 +13,12 @@
             'orchestra.home',
 
             // Services
-            'orchestra.pubsub.service'
+            'orchestra.pubsub.service',
 
             // Directives
 
             // Third party modules
+            'firebase'
         ])
         .constant(_, window._);
 })();

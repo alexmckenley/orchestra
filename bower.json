@@ -13,9 +13,10 @@
     "tests"
   ],
   "dependencies": {
-    "faye": "~1.1.0",
     "ui-router": "~0.2.15",
     "angular": "~1.4.3",
-    "lodash": "~3.10.0"
+    "lodash": "~3.10.0",
+    "firebase": "~2.2.9",
+    "angularfire": "~1.1.2"
   }
 }

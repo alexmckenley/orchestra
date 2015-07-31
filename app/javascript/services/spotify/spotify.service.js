@@ -3,11 +3,15 @@
 
     angular
         .module('orchestra.spotify.service', [
-            'orchestra.constants'
+            'orchestra.constants',
+            'orchestra.time.service'
         ])
-        .factory('spotify', function spotifyService(_, $q, $timeout, SPOTIFY) {
+        .factory('spotify', function spotifyService(_, $q, $timeout, SPOTIFY, time) {
             var service = {
-                    initialize: initialize
+                    initialize: initialize,
+                    pause: pause,
+                    play: play,
+                    status: status
                 },
                 port = SPOTIFY.STARTING_PORT,
                 tokens = {};
@@ -19,6 +23,16 @@
 
                 findPort(SPOTIFY.STARTING_PORT)
                     .then(function initializeSucces() {
+                        return getCsrfToken();
+                    })
+                    .then(function findCsrfTokenSucces(data) {
+                        tokens.csrf = data.token;
+
+                        return getOauthToken();
+                    })
+                    .then(function findOauthTokenSuccess(data) {
+                        tokens.oauth = data.t;
+
                         deferred.resolve();
                     });
 
@@ -28,7 +42,7 @@
             function findPort(portToTry, deferred, options) {
                 deferred = deferred || $q.deferred();
                 options = options || _.merge({}, SPOTIFY.DEFAULT_AJAX_OPTIONS, {
-                    uri: SPOTIFY.HOST + port + SPOTIFY.TOKEN_PATH
+                    url: SPOTIFY.HOST + port + SPOTIFY.TOKEN_PATH
                 });
 
                 makeRequest(options)
@@ -43,11 +57,43 @@
                 return deferred.promise;
             }
 
+            function getCsrfToken() {
+                return makeRequest({
+                    url: SPOTIFY.HOST + port + SPOTIFY.TOKEN_PATH
+                });
+            }
+
+            function getOauthToken() {
+                return makeRequest({
+                    url: SPOTIFY.OAUTH_URI
+                });
+            }
+
+            function play(song, timeInSeconds) {
+                return makeRequest({
+                    url: SPOTIFY.HOST + port + SPOTIFY.REMOTE_PATH + '/play.json#' + time.convertTime(timeInSeconds),
+                    params : { uri: song.url }
+                });
+            }
+
+            function pause() {
+                return makeRequest({
+                    url: SPOTIFY.HOST + port + SPOTIFY.REMOTE_PATH + '/pause.json',
+                    params : { pause: true }
+                });
+            }
+
+            function status() {
+                return makeRequest({
+                    url: SPOTIFY.HOST + port + SPOTIFY.REMOTE_PATH + '/status.json'
+                });
+            }
+
             function makeRequest(options) {
                 var deferred = $q.deferred;
 
-                options = _.merge(options, {
-                    qs: tokens
+                options = _.merge(options, SPOTIFY.DEFAULT_AJAX_OPTIONS, {
+                    params: tokens
                 });
 
                 // Call Chrome Extension and Return promise
@@ -63,29 +109,3 @@
             return service;
         });
 })();
-
-//_.times(5, function findPortTimes() {
-//    setTokens(port);
-//    port++;
-//});
-//
-//
-//function setTokens(port) {
-//    var options = _.merge({}, constants.defaultAjaxOptions, {
-//        uri: constants.HOST + port + constants.TOKEN_PATH
-//    });
-//
-//    request(options)
-//        .then(function csrfSuccess(data) {
-//            constants.port        = port;
-//            constants.tokens.csrf = JSON.parse(data).token;
-//
-//            options.uri = constants.OAUTH_URI;
-//            return request(options);
-//        })
-//        .then(function oauthSuccess(data) {
-//            constants.tokens.oauth = JSON.parse(data).t;
-//        })
-//        // Here just to avoid warnings, we don't care if it fails.
-//        .catch(_.noop);
-//}
