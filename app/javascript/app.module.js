@@ -10,12 +10,14 @@
             'orchestra.app.state',
 
             // Modules
-            'orchestra.home'
+            'orchestra.home',
 
             // Services
+            'orchestra.pubsub.service'
 
             // Directives
 
             // Third party modules
-        ]);
+        ])
+        .constant(_, window._);
 })();
