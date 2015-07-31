@@ -62,7 +62,6 @@ angular.module('orchestra.constants', [])
 
     angular
         .module('orchestra.home.controller', [
-            'ngMaterial',
             'orchestra.pubsub.service'
         ])
         .controller('HomeController', HomeController);
