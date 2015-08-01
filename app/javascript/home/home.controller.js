@@ -11,12 +11,13 @@
         ])
         .controller('HomeController', HomeController);
 
-    function HomeController($firebaseObject, auth, firebase, player, spotify) {
+    function HomeController($firebaseObject, $scope, $state, auth, firebase, player, spotify) {
         var ctrl = this,
             ref = firebase.getReference();
 
-        ctrl.currentStatus = {};
-        ctrl.randyPlay = randyPlay;
+        ctrl.spotifyIsReady = spotify.isReady;
+
+        spotify.initialize();
 
         auth.login()
             .then(function authSuccess(authData) {
@@ -28,21 +29,14 @@
             });
 
         function setCurrentStatus(authData) {
-            ctrl.currentStatus = $firebaseObject(ref.child('channels').child(authData.uid));
-            ctrl.currentStatus.dream = 'DREAM2';
-            ctrl.currentStatus.$save();
-            console.log('SAVED?');
+            $firebaseObject(ref.child('channels').child(authData.uid)).$bindTo($scope, 'currentStatus');
         }
 
+        ctrl.randyPlay = randyPlay;
+
         function randyPlay() {
-            spotify.initialize()
-                .then(function() {
-                    console.log('SUCCESS INIT');
-                    player.play({ url: 'spotify:track:4VPpZXXeZHfpzvHNaPjLcF' });
-                })
-                .catch(function() {
-                    console.log('CATCH INIT');
-                });
+            $state.go('orchestra.channel');
+            //player.play({ url: 'spotify:track:4VPpZXXeZHfpzvHNaPjLcF' });
         }
     }
 })();

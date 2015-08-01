@@ -7,8 +7,10 @@
             'orchestra.time.service'
         ])
         .factory('spotify', function spotifyService($q, $timeout, SPOTIFY, time) {
-            var service = {
+            var initialized = false,
+                service = {
                     initialize: initialize,
+                    isReady: isReady,
                     pause: pause,
                     play: play,
                     status: status
@@ -32,7 +34,7 @@
                     })
                     .then(function findOauthTokenSuccess(data) {
                         tokens.oauth = data.t;
-                        console.log(tokens);
+                        initialized = true;
 
                         deferred.resolve();
                     });
@@ -72,9 +74,8 @@
 
             function play(song, timeInSeconds) {
                 return makeRequest({
-                    //url: SPOTIFY.HOST + port + SPOTIFY.REMOTE_PATH + '/play.json#' + time.convertTime(timeInSeconds),
                     url: SPOTIFY.HOST + port + SPOTIFY.REMOTE_PATH + '/play.json',
-                    params: { uri: song.url }
+                    params: { uri: song.url + '#' + time.convertTime(timeInSeconds) }
                 });
             }
 
@@ -91,8 +92,9 @@
                 });
             }
 
-
-            //curl 'https://tpcaahshvs.spotilocal.com:4370/remote/play.json?uri=spotify%3Atrack%3A4VPpZXXeZHfpzvHNaPjLcF&csrf=32290511c330bf2dc573310222808761&oauth=NAowChgKB1Nwb3RpZnkSABoGmAEByAEBJSOwvVUSFKH0QE_T1LlF0AAMEg8HAc3elmPd' -H 'Pragma: no-cache' -H 'Origin: https://embed.spotify.com' -H 'Accept-Encoding: gzip, deflate, sdch' -H 'Accept-Language: en-US,en;q=0.8,es-419;q=0.6,es;q=0.4' -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.125 Safari/537.36' -H 'Accept: application/json' -H 'Cache-Control: no-cache' -H 'Connection: keep-alive' --compressed
+            function isReady() {
+                return initialized;
+            }
 
             function makeRequest(options) {
                 var deferred = $q.defer(),
