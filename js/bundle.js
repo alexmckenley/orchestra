@@ -7,7 +7,7 @@
 
     function appConfig($locationProvider) {
         // Enabling html5 pushstate
-        $locationProvider.html5Mode(true);
+        //$locationProvider.html5Mode(true);
     }
 })();
 angular.module('orchestra.constants', [])
@@ -38,8 +38,11 @@ angular.module('orchestra.constants', [])
 
             // Modules
             'orchestra.home',
+            'orchestra.channel',
 
             // Services
+            'orchestra.auth.service',
+            'orchestra.firebase.service',
             'orchestra.player.service',
             'orchestra.spotify.service',
             'orchestra.time.service',
@@ -49,7 +52,15 @@ angular.module('orchestra.constants', [])
             // Third party modules
             'firebase'
         ])
-        .constant(_, window._);
+
+        .constant(_, window._)
+
+        .run(function appRun($log, $rootScope) {
+            $rootScope
+                .$on('$stateChangeError', function stateChangeError(event, toState, toParams, fromState, fromParams, error) {
+                    $log.error('Error in state transistion: ', error);
+                });
+        });
 })();
 
 (function() {
@@ -66,13 +77,7 @@ angular.module('orchestra.constants', [])
     function orchestraState($stateProvider) {
         $stateProvider
             .state('orchestra', {
-                abstract: true,
-                views: {
-                    main: {
-                        templateUrl: 'home/home.tpl.html',
-                        controller: 'HomeController as homeController'
-                    }
-                }
+                abstract: true
             });
     }
 })();
@@ -89,12 +94,13 @@ angular.module('orchestra.constants', [])
         ])
         .controller('HomeController', HomeController);
 
-    function HomeController($firebaseObject, auth, firebase, player, spotify) {
+    function HomeController($firebaseObject, $scope, $state, auth, firebase, player, spotify) {
         var ctrl = this,
             ref = firebase.getReference();
 
-        ctrl.currentStatus = {};
-        ctrl.randyPlay = randyPlay;
+        ctrl.spotifyIsReady = spotify.isReady;
+
+        spotify.initialize();
 
         auth.login()
             .then(function authSuccess(authData) {
@@ -106,21 +112,14 @@ angular.module('orchestra.constants', [])
             });
 
         function setCurrentStatus(authData) {
-            ctrl.currentStatus = $firebaseObject(ref.child('channels').child(authData.uid));
-            ctrl.currentStatus.dream = 'DREAM2';
-            ctrl.currentStatus.$save();
-            console.log('SAVED?');
+            $firebaseObject(ref.child('channels').child(authData.uid)).$bindTo($scope, 'currentStatus');
         }
 
+        ctrl.randyPlay = randyPlay;
+
         function randyPlay() {
-            spotify.initialize()
-                .then(function() {
-                    console.log('SUCCESS INIT');
-                    player.play({ url: 'spotify:track:4VPpZXXeZHfpzvHNaPjLcF' });
-                })
-                .catch(function() {
-                    console.log('CATCH INIT');
-                });
+            $state.go('orchestra.channel');
+            //player.play({ url: 'spotify:track:4VPpZXXeZHfpzvHNaPjLcF' });
         }
     }
 })();
@@ -147,7 +146,61 @@ angular.module('orchestra.constants', [])
     function homeState($stateProvider) {
         $stateProvider
             .state('orchestra.home', {
-                url: '/'
+                url: '',
+                views: {
+                    'main@': {
+                        templateUrl: 'home/home.tpl.html',
+                        controller: 'HomeController as homeController'
+                    }
+                }
+            });
+    }
+})();
+(function() {
+    'use strict';
+
+    angular
+        .module('orchestra.channel.controller', [])
+        .controller('ChannelController', ChannelController);
+
+    function ChannelController() {
+        var ctrl = this;
+
+        ctrl.hello = 'Hello World';
+        console.log('CHANNEL CONTROLLER');
+    }
+})();
+
+(function() {
+    'use strict';
+
+    angular
+        .module('orchestra.channel', [
+            'orchestra.channel.state'
+        ]);
+})();
+(function() {
+    'use strict';
+
+    angular
+        .module('orchestra.channel.state', [
+            'orchestra.channel.controller',
+            'orchestra.templates',
+            'ui.router'
+        ])
+        .config(channelState);
+
+    function channelState($stateProvider) {
+        console.log('channel state');
+        $stateProvider
+            .state('orchestra.channel', {
+                url: 'channel',
+                views: {
+                    'main@': {
+                        templateUrl: 'channel/channel.tpl.html',
+                        controller: 'ChannelController as channelController'
+                    }
+                }
             });
     }
 })();
@@ -183,6 +236,194 @@ angular.module('orchestra.constants', [])
 
             return service;
         });
+})();
+
+(function() {
+    'use strict';
+
+    angular
+        .module('orchestra.spotify.service', [
+            'orchestra.constants',
+            'orchestra.time.service'
+        ])
+        .factory('spotify', function spotifyService($q, $timeout, SPOTIFY, time) {
+            var initialized = false,
+                service = {
+                    initialize: initialize,
+                    isReady: isReady,
+                    pause: pause,
+                    play: play,
+                    status: status
+                },
+                port = SPOTIFY.STARTING_PORT,
+                tokens = {};
+
+            function initialize() {
+                var deferred = $q.defer();
+
+                rejectAfterTimer(deferred);
+
+                findPort(SPOTIFY.STARTING_PORT)
+                    .then(function initializeSucces() {
+                        return getCsrfToken();
+                    })
+                    .then(function findCsrfTokenSucces(data) {
+                        tokens.csrf = data.token;
+
+                        return getOauthToken();
+                    })
+                    .then(function findOauthTokenSuccess(data) {
+                        tokens.oauth = data.t;
+                        initialized = true;
+
+                        deferred.resolve();
+                    });
+
+                return deferred.promise;
+            }
+
+            function findPort(portToTry, deferred, options) {
+                deferred = deferred || $q.defer();
+                options = options || _.merge({}, SPOTIFY.DEFAULT_AJAX_OPTIONS, {
+                    url: SPOTIFY.HOST + port + SPOTIFY.TOKEN_PATH
+                });
+
+                makeRequest(options)
+                    .then(function findPortSuccess() {
+                        port = portToTry;
+                        deferred.resolve(port);
+                    })
+                    .catch(function findPortCatch() {
+                        findPort(portToTry + 1, deferred, options);
+                    });
+
+                return deferred.promise;
+            }
+
+            function getCsrfToken() {
+                return makeRequest({
+                    url: SPOTIFY.HOST + port + SPOTIFY.TOKEN_PATH
+                });
+            }
+
+            function getOauthToken() {
+                return makeRequest({
+                    url: SPOTIFY.OAUTH_URI
+                });
+            }
+
+            function play(song, timeInSeconds) {
+                return makeRequest({
+                    url: SPOTIFY.HOST + port + SPOTIFY.REMOTE_PATH + '/play.json',
+                    params: { uri: song.url + '#' + time.convertTime(timeInSeconds) }
+                });
+            }
+
+            function pause() {
+                return makeRequest({
+                    url: SPOTIFY.HOST + port + SPOTIFY.REMOTE_PATH + '/pause.json',
+                    params: { pause: true }
+                });
+            }
+
+            function status() {
+                return makeRequest({
+                    url: SPOTIFY.HOST + port + SPOTIFY.REMOTE_PATH + '/status.json'
+                });
+            }
+
+            function isReady() {
+                return initialized;
+            }
+
+            function makeRequest(options) {
+                var deferred = $q.defer(),
+                    extensionId = 'clfgcnmgjjgnebpcmhpnlomeodloinin';
+
+                options = _.merge(options, SPOTIFY.DEFAULT_AJAX_OPTIONS, {
+                    params: tokens
+                });
+
+                console.log(options);
+
+                chrome.runtime.sendMessage(extensionId, options, function(response) {
+                    // .error .data
+                    if (response.error) {
+                        console.log(response.error);
+                        deferred.reject(response.error);
+                    }
+
+                    console.log(response.data);
+                    deferred.resolve(response.data);
+                });
+
+                // Call Chrome Extension and Return promise
+                return deferred.promise;
+            }
+
+            function rejectAfterTimer(deferred) {
+                $timeout(function cancelFindClient() {
+                    deferred.reject('Spotify Client not Found');
+                }, 2000);
+            }
+
+            return service;
+        });
+})();
+
+(function() {
+    'use strict';
+
+    angular
+        .module('orchestra.firebase.service', [
+            'firebase'
+        ])
+        .factory('firebase', function firebaseService() {
+            var reference = new Firebase('https://ammo-sync.firebaseio.com/'),
+                service = {
+                    getReference: getReference
+                };
+
+            function getReference() {
+                return reference;
+            }
+
+            return service;
+        });
+})();
+
+(function() {
+'use strict';
+
+angular
+    .module('orchestra.time.service', [])
+    .factory('time', function timeService() {
+        var service = {
+                convertTime: convertTime
+            };
+
+        // Converts seconds (number) to #M:SS string format
+        // Eg: 61 => 1:01
+        function convertTime(totalSeconds) {
+            var minutes,
+                seconds;
+
+            if (isNaN(totalSeconds)) {
+                return '';
+            }
+
+            minutes = Math.floor(totalSeconds / 60);
+            seconds = Math.floor(totalSeconds - minutes * 60);
+
+            if (seconds < 10) {
+                seconds = '0' + seconds;
+            }
+
+            return minutes + ':' + seconds;
+        }
+
+        return service;
+    });
 })();
 
 (function() {
@@ -253,190 +494,4 @@ angular.module('orchestra.constants', [])
 
             return service;
         });
-})();
-
-(function() {
-    'use strict';
-
-    angular
-        .module('orchestra.firebase.service', [
-            'firebase'
-        ])
-        .factory('firebase', function firebaseService() {
-            var reference = new Firebase('https://ammo-sync.firebaseio.com/'),
-                service = {
-                    getReference: getReference
-                };
-
-            function getReference() {
-                return reference;
-            }
-
-            return service;
-        });
-})();
-
-(function() {
-    'use strict';
-
-    angular
-        .module('orchestra.spotify.service', [
-            'orchestra.constants',
-            'orchestra.time.service'
-        ])
-        .factory('spotify', function spotifyService($q, $timeout, SPOTIFY, time) {
-            var service = {
-                    initialize: initialize,
-                    pause: pause,
-                    play: play,
-                    status: status
-                },
-                port = SPOTIFY.STARTING_PORT,
-                tokens = {};
-
-            function initialize() {
-                var deferred = $q.defer();
-
-                rejectAfterTimer(deferred);
-
-                findPort(SPOTIFY.STARTING_PORT)
-                    .then(function initializeSucces() {
-                        return getCsrfToken();
-                    })
-                    .then(function findCsrfTokenSucces(data) {
-                        tokens.csrf = data.token;
-
-                        return getOauthToken();
-                    })
-                    .then(function findOauthTokenSuccess(data) {
-                        tokens.oauth = data.t;
-                        console.log(tokens);
-
-                        deferred.resolve();
-                    });
-
-                return deferred.promise;
-            }
-
-            function findPort(portToTry, deferred, options) {
-                deferred = deferred || $q.defer();
-                options = options || _.merge({}, SPOTIFY.DEFAULT_AJAX_OPTIONS, {
-                    url: SPOTIFY.HOST + port + SPOTIFY.TOKEN_PATH
-                });
-
-                makeRequest(options)
-                    .then(function findPortSuccess() {
-                        port = portToTry;
-                        deferred.resolve(port);
-                    })
-                    .catch(function findPortCatch() {
-                        findPort(portToTry + 1, deferred, options);
-                    });
-
-                return deferred.promise;
-            }
-
-            function getCsrfToken() {
-                return makeRequest({
-                    url: SPOTIFY.HOST + port + SPOTIFY.TOKEN_PATH
-                });
-            }
-
-            function getOauthToken() {
-                return makeRequest({
-                    url: SPOTIFY.OAUTH_URI
-                });
-            }
-
-            function play(song, timeInSeconds) {
-                return makeRequest({
-                    //url: SPOTIFY.HOST + port + SPOTIFY.REMOTE_PATH + '/play.json#' + time.convertTime(timeInSeconds),
-                    url: SPOTIFY.HOST + port + SPOTIFY.REMOTE_PATH + '/play.json',
-                    params: { uri: song.url }
-                });
-            }
-
-            function pause() {
-                return makeRequest({
-                    url: SPOTIFY.HOST + port + SPOTIFY.REMOTE_PATH + '/pause.json',
-                    params: { pause: true }
-                });
-            }
-
-            function status() {
-                return makeRequest({
-                    url: SPOTIFY.HOST + port + SPOTIFY.REMOTE_PATH + '/status.json'
-                });
-            }
-
-
-            //curl 'https://tpcaahshvs.spotilocal.com:4370/remote/play.json?uri=spotify%3Atrack%3A4VPpZXXeZHfpzvHNaPjLcF&csrf=32290511c330bf2dc573310222808761&oauth=NAowChgKB1Nwb3RpZnkSABoGmAEByAEBJSOwvVUSFKH0QE_T1LlF0AAMEg8HAc3elmPd' -H 'Pragma: no-cache' -H 'Origin: https://embed.spotify.com' -H 'Accept-Encoding: gzip, deflate, sdch' -H 'Accept-Language: en-US,en;q=0.8,es-419;q=0.6,es;q=0.4' -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.125 Safari/537.36' -H 'Accept: application/json' -H 'Cache-Control: no-cache' -H 'Connection: keep-alive' --compressed
-
-            function makeRequest(options) {
-                var deferred = $q.defer(),
-                    extensionId = 'clfgcnmgjjgnebpcmhpnlomeodloinin';
-
-                options = _.merge(options, SPOTIFY.DEFAULT_AJAX_OPTIONS, {
-                    params: tokens
-                });
-
-                console.log(options);
-
-                chrome.runtime.sendMessage(extensionId, options, function(response) {
-                    // .error .data
-                    if (response.error) {
-                        console.log(response.error);
-                        deferred.reject(response.error);
-                    }
-
-                    console.log(response.data);
-                    deferred.resolve(response.data);
-                });
-
-                // Call Chrome Extension and Return promise
-                return deferred.promise;
-            }
-
-            function rejectAfterTimer(deferred) {
-                $timeout(function cancelFindClient() {
-                    deferred.reject('Spotify Client not Found');
-                }, 2000);
-            }
-
-            return service;
-        });
-})();
-
-(function() {
-'use strict';
-
-angular
-    .module('orchestra.time.service', [])
-    .factory('time', function timeService() {
-        var service = {
-                convertTime: convertTime
-            };
-
-        // Converts seconds (number) to #M:SS string format
-        // Eg: 61 => 1:01
-        function convertTime(totalSeconds) {
-            var minutes,
-                seconds;
-
-            if (isNaN(totalSeconds)) {
-                return '';
-            }
-
-            minutes = Math.floor(totalSeconds / 60);
-            seconds = Math.floor(totalSeconds - minutes * 60);
-
-            if (seconds < 10) {
-                seconds = '0' + seconds;
-            }
-
-            return minutes + ':' + seconds;
-        }
-
-        return service;
-    });
 })();
