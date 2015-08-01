@@ -3,35 +3,46 @@
 
     angular
         .module('orchestra.home.controller', [
-            'orchestra.pubsub.service'
+            'firebase',
+            'orchestra.auth.service',
+            'orchestra.firebase.service',
+            'orchestra.player.service',
+            'orchestra.spotify.service'
         ])
         .controller('HomeController', HomeController);
 
-    function HomeController(pubsub) {
-        var ctrl = this;
+    function HomeController($firebaseObject, auth, firebase, player, spotify) {
+        var ctrl = this,
+            ref = firebase.getReference();
 
-        ctrl.joinChannel = joinChannel;
-        ctrl.becomeDj = becomeDj;
-        ctrl.becomeListener = becomeListener;
+        ctrl.currentStatus = {};
+        ctrl.randyPlay = randyPlay;
 
-        function joinChannel(valid) {
-            if (!valid) {
-                alert('Channel Name should be 3+ Characters');
-
-                return;
-            }
-
-            pubsub.getClient().publish('/joinChannel', {
-                channel: ctrl.channel
+        auth.login()
+            .then(function authSuccess(authData) {
+                console.log('Logged in as:', authData);
+                setCurrentStatus(authData);
+            })
+            .catch(function authCatch(error) {
+                console.log('Authentication failed:', error);
             });
+
+        function setCurrentStatus(authData) {
+            ctrl.currentStatus = $firebaseObject(ref.child('channels').child(authData.uid));
+            ctrl.currentStatus.dream = 'DREAM2';
+            ctrl.currentStatus.$save();
+            console.log('SAVED?');
         }
 
-        function becomeDj() {
-            pubsub.getClient().publish('/becomeDj', {});
-        }
-
-        function becomeListener() {
-            pubsub.getClient().publish('/becomeListener', {});
+        function randyPlay() {
+            spotify.initialize()
+                .then(function() {
+                    console.log('SUCCESS INIT');
+                    player.play({ url: 'spotify:track:4VPpZXXeZHfpzvHNaPjLcF' });
+                })
+                .catch(function() {
+                    console.log('CATCH INIT');
+                });
         }
     }
 })();

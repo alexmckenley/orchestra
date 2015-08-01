@@ -13,7 +13,9 @@
             'orchestra.home',
 
             // Services
-            'orchestra.pubsub.service',
+            'orchestra.player.service',
+            'orchestra.spotify.service',
+            'orchestra.time.service',
 
             // Directives
 

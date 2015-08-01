@@ -1,1 +1,1 @@
-angular.module("orchestra.templates", []).run(["$templateCache", function($templateCache) {$templateCache.put("home/home.tpl.html","<div>\n    HOME Template\n</div>\n");}]);
+angular.module("orchestra.templates", []).run(["$templateCache", function($templateCache) {$templateCache.put("home/home.tpl.html","<div>\n    HOME Template\n    <button ng-click=\"homeController.randyPlay()\">PLAY</button>\n</div>\n");}]);

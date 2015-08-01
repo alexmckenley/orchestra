@@ -6,7 +6,7 @@ angular.module('orchestra.constants', [])
             },
             method: 'GET'
         },
-        HOST: 'https://tpcaahshvs.spotilocal.com',
+        HOST: 'https://tpcaahshvs.spotilocal.com:',
         OAUTH_URI: 'http://open.spotify.com/token',
         REMOTE_PATH: '/remote',
         STARTING_PORT: 4370,
