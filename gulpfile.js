@@ -12,7 +12,7 @@ var concat         = require('gulp-concat'),
 var paths = {
     dist  : 'dist',
     html   : ['app/javascript/**/*.html'],
-    index  : ['app/index.html'],
+    index  : ['app/index.html', 'app/404.html'],
     scripts: ['app/javascript/**/*.js'],
     styles : ['app/sass/**/*.scss']
 };
