@@ -12,6 +12,8 @@
 
 .channel-shareArrow {
 	display: inline-block;
+	position: absolute;
+	transform: translateY(-65%) rotate(9deg);
 	width: 45px;
 	padding-left: 1rem;
 }
