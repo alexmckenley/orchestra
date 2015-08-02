@@ -103,13 +103,16 @@ angular.module('orchestra.constants', [])
         ctrl.channelId = $stateParams.channelId;
 
         isAdmin = auth.getUser().uid === $stateParams.channelId;
-        $scope.currentStatus = {
-            playing: false,
-            song: {}
+        $scope.channel = {
+            currentStatus: {
+                playing: false,
+                song: {}
+            }
         };
 
         // Using scope for Firebase's 3way binding, no controller as :(
-        firebase.getChannel($stateParams.channelId).$bindTo($scope, 'currentStatus');
+        //firebase.getChannel($stateParams.channelId).$bindTo($scope, 'currentStatus');
+        firebase.getChannel($stateParams.channelId).$bindTo($scope, 'channel');
 
         if (isAdmin) {
             pollSpotifyStatus();
@@ -122,14 +125,14 @@ angular.module('orchestra.constants', [])
                 spotify.status()
                     .then(function pollIntervalSuccess(data) {
                         player.setCurrentStatus(data);
-                        $scope.currentStatus = player.getCurrentStatus();
+                        $scope.channel.currentStatus = player.getCurrentStatus();
                     });
             }, 2000);
         }
 
         function subscribeToUpdates() {
             $scope.$watch(function playingStatus() {
-                return $scope.currentStatus.playing;
+                return $scope.channel.currentStatus.playing;
             }, function playingStatusChanged(newValue) {
                 if (!newValue) {
                     player.pause();
@@ -137,12 +140,34 @@ angular.module('orchestra.constants', [])
             });
 
             $scope.$watch(function songStatus() {
-                return $scope.currentStatus.song.url;
+                return $scope.channel.currentStatus.song.url;
             }, function songStatusChanged() {
+<<<<<<< HEAD
                 player.play($scope.currentStatus.song);
             });
         }
 
+=======
+                player.play($scope.channel.currentStatus.song, $scope.channel.currentStatus.playingPosition);
+            });
+
+            $scope.$watch(function playingPosition() {
+                return $scope.channel.currentStatus.playingPosition;
+            }, function playingPositionChanged(newValue, oldValue) {
+                if (seekDetected(newValue, oldValue) && isSameSong()) {
+                    player.play($scope.channel.currentStatus.song, newValue);
+                }
+            });
+        }
+
+        function seekDetected(newValue, oldValue) {
+            return Math.abs(newValue - oldValue) > 10;
+        }
+
+        function isSameSong() {
+            return $scope.channel.currentStatus.song.url === player.getCurrentStatus().song.url;
+        }
+>>>>>>> 41e1b60... Nested currentStatus
     }
 })();
 
@@ -305,7 +330,6 @@ angular.module('orchestra.constants', [])
                     getCurrentStatus: getCurrentStatus,
                     pause: pause,
                     play: play,
-                    seek: seek,
                     setCurrentStatus: setCurrentStatus,
                     status: status
                 },
@@ -340,13 +364,6 @@ angular.module('orchestra.constants', [])
             function status() {
                 spotify.status()
                     .then(function statusSuccesss(data) {
-                        setCurrentStatus(data);
-                    });
-            }
-
-            function seek(song, time) {
-                spotify.play(song, time)
-                    .then(function seekSuccess(data) {
                         setCurrentStatus(data);
                     });
             }

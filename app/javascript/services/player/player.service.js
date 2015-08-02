@@ -11,7 +11,6 @@
                     getCurrentStatus: getCurrentStatus,
                     pause: pause,
                     play: play,
-                    seek: seek,
                     setCurrentStatus: setCurrentStatus,
                     status: status
                 },
@@ -46,13 +45,6 @@
             function status() {
                 spotify.status()
                     .then(function statusSuccesss(data) {
-                        setCurrentStatus(data);
-                    });
-            }
-
-            function seek(song, time) {
-                spotify.play(song, time)
-                    .then(function seekSuccess(data) {
                         setCurrentStatus(data);
                     });
             }
