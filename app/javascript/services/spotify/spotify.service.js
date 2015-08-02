@@ -45,9 +45,10 @@
                 return deferred.promise;
             }
 
-            function findPort(portToTry, deferred) {
+            function findPort(portToTry, deferred, tries) {
                 var options;
 
+                tries = tries || 1;
                 deferred = deferred || $q.defer();
                 options = _.merge({}, SPOTIFY.DEFAULT_AJAX_OPTIONS, {
                     url: SPOTIFY.HOST + portToTry + SPOTIFY.TOKEN_PATH
@@ -59,7 +60,11 @@
                         deferred.resolve(port);
                     })
                     .catch(function findPortCatch() {
-                        findPort(portToTry + 1, deferred);
+                        if (tries < 20) {
+                            findPort(portToTry + 1, deferred, tries + 1);
+                        } else {
+                            deferred.reject('Spotify Client not found.');
+                        }
                     });
 
                 return deferred.promise;
