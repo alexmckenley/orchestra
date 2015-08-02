@@ -2,6 +2,7 @@
 var concat         = require('gulp-concat'),
     connect        = require('gulp-connect'),
     del            = require('del'),
+    ghPages        = require('gulp-gh-pages'),
     gulp           = require('gulp'),
     rename         = require('gulp-rename'),
     mainBowerFiles = require('main-bower-files'),
@@ -143,6 +144,16 @@ gulp.task('minifyCss', function() {
         .src(paths.build + '/**/*.css')
         .pipe(minifyCss())
         .pipe(gulp.dest(paths.dist));
+});
+
+/**
+ * Post to gh-pages
+ */
+gulp.task('gh-pages', function() {
+    return gulp.src(paths.build + '/**/*')
+        .pipe(ghPages({
+            origin: 'deini'
+        }));
 });
 
 /**
