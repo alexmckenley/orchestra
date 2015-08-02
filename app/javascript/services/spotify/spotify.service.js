@@ -45,9 +45,11 @@
                 return deferred.promise;
             }
 
-            function findPort(portToTry, deferred, options) {
+            function findPort(portToTry, deferred) {
+                var options;
+
                 deferred = deferred || $q.defer();
-                options = options || _.merge({}, SPOTIFY.DEFAULT_AJAX_OPTIONS, {
+                options = _.merge({}, SPOTIFY.DEFAULT_AJAX_OPTIONS, {
                     url: SPOTIFY.HOST + portToTry + SPOTIFY.TOKEN_PATH
                 });
 
@@ -57,7 +59,7 @@
                         deferred.resolve(port);
                     })
                     .catch(function findPortCatch() {
-                        findPort(portToTry + 1, deferred, options);
+                        findPort(portToTry + 1, deferred);
                     });
 
                 return deferred.promise;

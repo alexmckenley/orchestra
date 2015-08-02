@@ -86,58 +86,6 @@ angular.module('orchestra.constants', [])
     'use strict';
 
     angular
-        .module('orchestra.home.controller', [
-            'orchestra.auth.service'
-        ])
-        .controller('HomeController', HomeController);
-
-    function HomeController($state, auth) {
-        var ctrl = this;
-
-        ctrl.createChannel = createChannel;
-
-        function createChannel() {
-            $state.go('orchestra.channel', { channelId: auth.getUser().uid });
-        }
-    }
-})();
-
-(function() {
-    'use strict';
-
-    angular
-        .module('orchestra.home', [
-            'orchestra.home.state'
-        ]);
-})();
-(function() {
-    'use strict';
-
-    angular
-        .module('orchestra.home.state', [
-            'orchestra.home.controller',
-            'orchestra.templates',
-            'ui.router'
-        ])
-        .config(homeState);
-
-    function homeState($stateProvider) {
-        $stateProvider
-            .state('orchestra.home', {
-                url: '/',
-                views: {
-                    'main@': {
-                        templateUrl: 'home/home.tpl.html',
-                        controller: 'HomeController as homeController'
-                    }
-                }
-            });
-    }
-})();
-(function() {
-    'use strict';
-
-    angular
         .module('orchestra.channel.controller', [
             'firebase',
             'orchestra.auth.service',
@@ -228,37 +176,54 @@ angular.module('orchestra.constants', [])
     'use strict';
 
     angular
-        .module('orchestra.auth.service', [
-            'firebase',
-            'orchestra.firebase.service'
+        .module('orchestra.home.controller', [
+            'orchestra.auth.service'
         ])
-        .factory('auth', function authService($firebaseAuth, $q, firebase) {
-            var auth,
-                reference = firebase.getReference(),
-                service = {
-                    getUser: getUser,
-                    login: login
-                };
+        .controller('HomeController', HomeController);
 
-            auth = $firebaseAuth(reference);
-            login();
+    function HomeController($state, auth) {
+        var ctrl = this;
 
-            function getUser() {
-                return reference.getAuth();
-            }
+        ctrl.createChannel = createChannel;
 
-            function login() {
-                if (service.getUser()) {
-                    return $q.when(service.getUser());
-                }
-
-                return auth.$authAnonymously();
-            }
-
-            return service;
-        });
+        function createChannel() {
+            $state.go('orchestra.channel', { channelId: auth.getUser().uid });
+        }
+    }
 })();
 
+(function() {
+    'use strict';
+
+    angular
+        .module('orchestra.home', [
+            'orchestra.home.state'
+        ]);
+})();
+(function() {
+    'use strict';
+
+    angular
+        .module('orchestra.home.state', [
+            'orchestra.home.controller',
+            'orchestra.templates',
+            'ui.router'
+        ])
+        .config(homeState);
+
+    function homeState($stateProvider) {
+        $stateProvider
+            .state('orchestra.home', {
+                url: '/',
+                views: {
+                    'main@': {
+                        templateUrl: 'home/home.tpl.html',
+                        controller: 'HomeController as homeController'
+                    }
+                }
+            });
+    }
+})();
 (function() {
     'use strict';
 
@@ -365,6 +330,41 @@ angular.module('orchestra.constants', [])
     'use strict';
 
     angular
+        .module('orchestra.auth.service', [
+            'firebase',
+            'orchestra.firebase.service'
+        ])
+        .factory('auth', function authService($firebaseAuth, $q, firebase) {
+            var auth,
+                reference = firebase.getReference(),
+                service = {
+                    getUser: getUser,
+                    login: login
+                };
+
+            auth = $firebaseAuth(reference);
+            login();
+
+            function getUser() {
+                return reference.getAuth();
+            }
+
+            function login() {
+                if (service.getUser()) {
+                    return $q.when(service.getUser());
+                }
+
+                return auth.$authAnonymously();
+            }
+
+            return service;
+        });
+})();
+
+(function() {
+    'use strict';
+
+    angular
         .module('orchestra.spotify.service', [
             'orchestra.constants',
             'orchestra.time.service'
@@ -408,9 +408,11 @@ angular.module('orchestra.constants', [])
                 return deferred.promise;
             }
 
-            function findPort(portToTry, deferred, options) {
+            function findPort(portToTry, deferred) {
+                var options;
+
                 deferred = deferred || $q.defer();
-                options = options || _.merge({}, SPOTIFY.DEFAULT_AJAX_OPTIONS, {
+                options = _.merge({}, SPOTIFY.DEFAULT_AJAX_OPTIONS, {
                     url: SPOTIFY.HOST + portToTry + SPOTIFY.TOKEN_PATH
                 });
 
@@ -420,7 +422,7 @@ angular.module('orchestra.constants', [])
                         deferred.resolve(port);
                     })
                     .catch(function findPortCatch() {
-                        findPort(portToTry + 1, deferred, options);
+                        findPort(portToTry + 1, deferred);
                     });
 
                 return deferred.promise;
