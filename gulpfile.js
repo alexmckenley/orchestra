@@ -5,17 +5,20 @@ var concat         = require('gulp-concat'),
     gulp           = require('gulp'),
     rename         = require('gulp-rename'),
     mainBowerFiles = require('main-bower-files'),
+    minifyCss      = require('gulp-minify-css'),
     runSequence    = require('run-sequence'),
     sass           = require('gulp-sass'),
-    templateCache  = require('gulp-angular-templatecache');
+    templateCache  = require('gulp-angular-templatecache'),
+    uglify         = require('gulp-uglify');
 
 // Paths
 var paths = {
-    dist    : 'dist',
-    html    : ['app/javascript/**/*.html'],
-    index   : ['app/index.html', 'CNAME'],
-    scripts : ['app/javascript/**/*.js'],
-    styles  : ['app/sass/**/*.scss']
+    build  : 'build',
+    dist   : 'dist',
+    html   : ['app/javascript/**/*.html'],
+    index  : ['app/index.html', 'CNAME'],
+    scripts: ['app/javascript/**/*.js'],
+    styles : ['app/sass/**/*.scss']
 };
 
 /**
@@ -25,40 +28,40 @@ gulp.task('scripts', function() {
     return gulp
         .src(paths.scripts)
         .pipe(concat('bundle.js'))
-        .pipe(gulp.dest(paths.dist + '/js'))
+        .pipe(gulp.dest(paths.build + '/js'))
         .pipe(connect.reload());
 });
 
 /**
- * Concat vendor scripts and move to dist dir.
+ * Concat vendor scripts and move to build dir.
  */
 gulp.task('vendor-scripts', function() {
     return gulp
         .src(mainBowerFiles('**/*.js'), { base: 'bower_components' })
         .pipe(concat('vendor.js'))
-        .pipe(gulp.dest(paths.dist + '/js'))
+        .pipe(gulp.dest(paths.build + '/js'))
         .pipe(connect.reload());
 });
 
 /**
- * Concat vendor css and move to dist dir.
+ * Concat vendor css and move to build dir.
  */
 gulp.task('vendor-styles', function() {
     return gulp
         .src(mainBowerFiles('**/*.css'), { base: 'bower_components' })
         .pipe(concat('vendor.css'))
-        .pipe(gulp.dest(paths.dist + '/css'))
+        .pipe(gulp.dest(paths.build + '/css'))
         .pipe(connect.reload());
 });
 
 /**
- * Compile + concat css and move to dist dir.
+ * Compile + concat css and move to build dir.
  */
 gulp.task('styles', function() {
     return gulp
         .src(paths.styles)
         .pipe(sass())
-        .pipe(gulp.dest(paths.dist + '/css'))
+        .pipe(gulp.dest(paths.build + '/css'))
         .pipe(connect.reload());
 });
 
@@ -67,7 +70,7 @@ gulp.task('styles', function() {
  */
 gulp.task('connect', function() {
     return connect.server({
-        root: paths.dist,
+        root: paths.build,
         livereload: true,
         port: 8888,
         fallback: paths.index[0]
@@ -75,25 +78,25 @@ gulp.task('connect', function() {
 });
 
 /**
- * Move index file to the dist dir.
+ * Move index file to the build dir.
  */
 gulp.task('index', function() {
     return gulp
         .src(paths.index[0])
-        .pipe(gulp.dest(paths.dist));
+        .pipe(gulp.dest(paths.build));
 });
 
 gulp.task('404', function() {
     return gulp
         .src(paths.index[0])
         .pipe(rename('404.html'))   // Github-pages compatibility hack
-        .pipe(gulp.dest(paths.dist));
+        .pipe(gulp.dest(paths.build));
 });
 
 gulp.task('cname', function() {
     return gulp
         .src(paths.index[1])
-        .pipe(gulp.dest(paths.dist));
+        .pipe(gulp.dest(paths.build));
 });
 
 gulp.task('html', function() {
@@ -103,21 +106,52 @@ gulp.task('html', function() {
             standalone: true,
             module: 'orchestra.templates'
         }))
-        .pipe(gulp.dest(paths.dist + '/js'))
+        .pipe(gulp.dest(paths.build + '/js'))
         .pipe(connect.reload());
 });
 
 gulp.task('clean', function(done) {
-    return del([paths.dist], done);
+    return del([paths.build], done);
 });
 
 /**
  * Build entire app.
  */
-gulp.task('dist', function(done) {
+gulp.task('build', function(done) {
     runSequence(
         'clean',
         ['vendor-scripts', 'vendor-styles', 'scripts', 'styles', 'index', 'cname', '404', 'html'],
+        done
+    );
+});
+
+/**
+ * Uglify JS
+ */
+gulp.task('uglify', function() {
+    return gulp
+        .src(paths.build + '/**/*.js')
+        .pipe(uglify())
+        .pipe(gulp.dest(paths.dist));
+});
+
+/**
+ * Minify CSS
+ */
+gulp.task('minifyCss', function() {
+    return gulp
+        .src(paths.build + '/**/*.css')
+        .pipe(minifyCss())
+        .pipe(gulp.dest(paths.dist));
+});
+
+/**
+ * Release
+ */
+gulp.task('release', function(done) {
+    runSequence(
+        'build',
+        ['uglify', 'minifyCss'],
         done
     );
 });
@@ -134,4 +168,4 @@ gulp.task('watch', function() {
 /**
  * Default task.
  */
-gulp.task('default', ['watch', 'dist', 'connect']);
+gulp.task('default', ['watch', 'build', 'connect']);
