@@ -135,8 +135,8 @@ angular.module('orchestra.constants', [])
 
             $scope.$watch(function songStatus() {
                 return $scope.currentStatus.song.url;
-            }, function songStatusChanged(newValue) {
-                player.play(newValue);
+            }, function songStatusChanged() {
+                player.play($scope.currentStatus.song);
             });
         }
 
@@ -267,6 +267,32 @@ angular.module('orchestra.constants', [])
     'use strict';
 
     angular
+        .module('orchestra.firebase.service', [
+            'firebase'
+        ])
+        .factory('firebase', function firebaseService($firebaseObject) {
+            var reference = new Firebase('https://ammo-sync.firebaseio.com/'),
+                service = {
+                    getReference: getReference,
+                    getChannel: getChannel
+                };
+
+            function getChannel(id) {
+                return $firebaseObject(reference.child('channels').child(id));
+            }
+
+            function getReference() {
+                return reference;
+            }
+
+            return service;
+        });
+})();
+
+(function() {
+    'use strict';
+
+    angular
         .module('orchestra.player.service', [
             'orchestra.constants',
             'orchestra.spotify.service'
@@ -337,66 +363,6 @@ angular.module('orchestra.constants', [])
 
             return service;
         });
-})();
-
-(function() {
-    'use strict';
-
-    angular
-        .module('orchestra.firebase.service', [
-            'firebase'
-        ])
-        .factory('firebase', function firebaseService($firebaseObject) {
-            var reference = new Firebase('https://ammo-sync.firebaseio.com/'),
-                service = {
-                    getReference: getReference,
-                    getChannel: getChannel
-                };
-
-            function getChannel(id) {
-                return $firebaseObject(reference.child('channels').child(id));
-            }
-
-            function getReference() {
-                return reference;
-            }
-
-            return service;
-        });
-})();
-
-(function() {
-'use strict';
-
-angular
-    .module('orchestra.time.service', [])
-    .factory('time', function timeService() {
-        var service = {
-                convertTime: convertTime
-            };
-
-        // Converts seconds (number) to #M:SS string format
-        // Eg: 61 => 1:01
-        function convertTime(totalSeconds) {
-            var minutes,
-                seconds;
-
-            if (isNaN(totalSeconds)) {
-                return '';
-            }
-
-            minutes = Math.floor(totalSeconds / 60);
-            seconds = Math.floor(totalSeconds - minutes * 60);
-
-            if (seconds < 10) {
-                seconds = '0' + seconds;
-            }
-
-            return minutes + ':' + seconds;
-        }
-
-        return service;
-    });
 })();
 
 (function() {
@@ -545,4 +511,38 @@ angular
 
             return service;
         });
+})();
+
+(function() {
+'use strict';
+
+angular
+    .module('orchestra.time.service', [])
+    .factory('time', function timeService() {
+        var service = {
+                convertTime: convertTime
+            };
+
+        // Converts seconds (number) to #M:SS string format
+        // Eg: 61 => 1:01
+        function convertTime(totalSeconds) {
+            var minutes,
+                seconds;
+
+            if (isNaN(totalSeconds)) {
+                return '';
+            }
+
+            minutes = Math.floor(totalSeconds / 60);
+            seconds = Math.floor(totalSeconds - minutes * 60);
+
+            if (seconds < 10) {
+                seconds = '0' + seconds;
+            }
+
+            return minutes + ':' + seconds;
+        }
+
+        return service;
+    });
 })();
