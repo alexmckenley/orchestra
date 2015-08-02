@@ -80,6 +80,12 @@ gulp.task('connect', function() {
 gulp.task('index', function() {
     return gulp
         .src(paths.index[0])
+        .pipe(gulp.dest(paths.dist));
+});
+
+gulp.task('404', function() {
+    return gulp
+        .src(paths.index[0])
         .pipe(rename('404.html'))   // Github-pages compatibility hack
         .pipe(gulp.dest(paths.dist));
 });
@@ -111,7 +117,7 @@ gulp.task('clean', function(done) {
 gulp.task('dist', function(done) {
     runSequence(
         'clean',
-        ['vendor-scripts', 'vendor-styles', 'scripts', 'styles', 'index', 'cname', 'html'],
+        ['vendor-scripts', 'vendor-styles', 'scripts', 'styles', 'index', 'cname', '404', 'html'],
         done
     );
 });
