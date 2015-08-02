@@ -13,12 +13,11 @@
         .controller('ChannelController', ChannelController);
 
     function ChannelController($interval, $scope, $stateParams, auth, firebase, player, spotify) {
-        var ctrl = this,
-            isAdmin;
+        var ctrl = this;
 
         ctrl.channelId = $stateParams.channelId;
+        ctrl.isAdmin = auth.getUser().uid === $stateParams.channelId;
 
-        isAdmin = auth.getUser().uid === $stateParams.channelId;
         $scope.channel = {
             currentStatus: {
                 playing: false,
@@ -29,7 +28,7 @@
         // Using scope for Firebase's 3way binding, no controller as :(
         firebase.getChannel($stateParams.channelId).$bindTo($scope, 'channel');
 
-        if (isAdmin) {
+        if (ctrl.isAdmin) {
             pollSpotifyStatus();
         } else {
             subscribeToUpdates();
