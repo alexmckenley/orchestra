@@ -1,6 +1,8 @@
-<h1>Now Playing</h1>
-<!-- <h5>Channel: {{ channelController.channelId }}</h5> -->
+<h1 ng-if="!channelController.isAdmin">Now Playing</h1>
+<h1 ng-if="channelController.isAdmin"><div class="channel-onAir"></div>On Air</h1>
+
 <h5>Share this page to invite friends to your channel. <img class="channel-shareArrow" src="http://www2.psd100.com/ppp/2013/09/2601/Up-arrow-symbol-icon-0926015328.png"></img></h5>
+
 <table class="u-full-width">
   <thead>
     <tr>

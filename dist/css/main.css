@@ -894,3 +894,20 @@ md-input-container:not(.md-input-invalid).md-input-focused label {
   display: inline-block;
   width: 45px;
   padding-left: 1rem; }
+
+@-webkit-keyframes pulse {
+  0% {
+    background-color: #CC0000; }
+  50% {
+    background-color: #7b0000; }
+  100% {
+    background-color: #CC0000; } }
+
+.channel-onAir {
+  display: inline-block;
+  margin-right: 1rem;
+  border-radius: 50%;
+  width: 3rem;
+  height: 3rem;
+  background-color: #990000;
+  -webkit-animation: pulse 3s ease -3s infinite; }
