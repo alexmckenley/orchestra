@@ -228,6 +228,41 @@ angular.module('orchestra.constants', [])
     'use strict';
 
     angular
+        .module('orchestra.auth.service', [
+            'firebase',
+            'orchestra.firebase.service'
+        ])
+        .factory('auth', function authService($firebaseAuth, $q, firebase) {
+            var auth,
+                reference = firebase.getReference(),
+                service = {
+                    getUser: getUser,
+                    login: login
+                };
+
+            auth = $firebaseAuth(reference);
+            login();
+
+            function getUser() {
+                return reference.getAuth();
+            }
+
+            function login() {
+                if (service.getUser()) {
+                    return $q.when(service.getUser());
+                }
+
+                return auth.$authAnonymously();
+            }
+
+            return service;
+        });
+})();
+
+(function() {
+    'use strict';
+
+    angular
         .module('orchestra.firebase.service', [
             'firebase'
         ])
@@ -327,38 +362,37 @@ angular.module('orchestra.constants', [])
 })();
 
 (function() {
-    'use strict';
+'use strict';
 
-    angular
-        .module('orchestra.auth.service', [
-            'firebase',
-            'orchestra.firebase.service'
-        ])
-        .factory('auth', function authService($firebaseAuth, $q, firebase) {
-            var auth,
-                reference = firebase.getReference(),
-                service = {
-                    getUser: getUser,
-                    login: login
-                };
+angular
+    .module('orchestra.time.service', [])
+    .factory('time', function timeService() {
+        var service = {
+                convertTime: convertTime
+            };
 
-            auth = $firebaseAuth(reference);
-            login();
+        // Converts seconds (number) to #M:SS string format
+        // Eg: 61 => 1:01
+        function convertTime(totalSeconds) {
+            var minutes,
+                seconds;
 
-            function getUser() {
-                return reference.getAuth();
+            if (isNaN(totalSeconds)) {
+                return '';
             }
 
-            function login() {
-                if (service.getUser()) {
-                    return $q.when(service.getUser());
-                }
+            minutes = Math.floor(totalSeconds / 60);
+            seconds = Math.floor(totalSeconds - minutes * 60);
 
-                return auth.$authAnonymously();
+            if (seconds < 10) {
+                seconds = '0' + seconds;
             }
 
-            return service;
-        });
+            return minutes + ':' + seconds;
+        }
+
+        return service;
+    });
 })();
 
 (function() {
@@ -408,9 +442,10 @@ angular.module('orchestra.constants', [])
                 return deferred.promise;
             }
 
-            function findPort(portToTry, deferred) {
+            function findPort(portToTry, deferred, tries) {
                 var options;
 
+                tries = tries || 1;
                 deferred = deferred || $q.defer();
                 options = _.merge({}, SPOTIFY.DEFAULT_AJAX_OPTIONS, {
                     url: SPOTIFY.HOST + portToTry + SPOTIFY.TOKEN_PATH
@@ -422,7 +457,11 @@ angular.module('orchestra.constants', [])
                         deferred.resolve(port);
                     })
                     .catch(function findPortCatch() {
-                        findPort(portToTry + 1, deferred);
+                        if (tries < 20) {
+                            findPort(portToTry + 1, deferred, tries + 1);
+                        } else {
+                            deferred.reject('Spotify Client not found.');
+                        }
                     });
 
                 return deferred.promise;
@@ -502,38 +541,4 @@ angular.module('orchestra.constants', [])
 
             return service;
         });
-})();
-
-(function() {
-'use strict';
-
-angular
-    .module('orchestra.time.service', [])
-    .factory('time', function timeService() {
-        var service = {
-                convertTime: convertTime
-            };
-
-        // Converts seconds (number) to #M:SS string format
-        // Eg: 61 => 1:01
-        function convertTime(totalSeconds) {
-            var minutes,
-                seconds;
-
-            if (isNaN(totalSeconds)) {
-                return '';
-            }
-
-            minutes = Math.floor(totalSeconds / 60);
-            seconds = Math.floor(totalSeconds - minutes * 60);
-
-            if (seconds < 10) {
-                seconds = '0' + seconds;
-            }
-
-            return minutes + ':' + seconds;
-        }
-
-        return service;
-    });
 })();
