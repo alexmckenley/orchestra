@@ -3,6 +3,7 @@ var concat         = require('gulp-concat'),
     connect        = require('gulp-connect'),
     del            = require('del'),
     gulp           = require('gulp'),
+    rename         = require('gulp-rename'),
     mainBowerFiles = require('main-bower-files'),
     runSequence    = require('run-sequence'),
     sass           = require('gulp-sass'),
@@ -10,11 +11,11 @@ var concat         = require('gulp-concat'),
 
 // Paths
 var paths = {
-    dist  : 'dist',
-    html   : ['app/javascript/**/*.html'],
-    index  : ['app/index.html', 'app/404.html', 'CNAME'],
-    scripts: ['app/javascript/**/*.js'],
-    styles : ['app/sass/**/*.scss']
+    dist    : 'dist',
+    html    : ['app/javascript/**/*.html'],
+    index   : ['app/index.html', 'CNAME'],
+    scripts : ['app/javascript/**/*.js'],
+    styles  : ['app/sass/**/*.scss']
 };
 
 /**
@@ -78,7 +79,14 @@ gulp.task('connect', function() {
  */
 gulp.task('index', function() {
     return gulp
-        .src(paths.index)
+        .src(paths.index[0])
+        .pipe(rename('404.html'))   // Github-pages compatibility hack
+        .pipe(gulp.dest(paths.dist));
+});
+
+gulp.task('cname', function() {
+    return gulp
+        .src(paths.index[1])
         .pipe(gulp.dest(paths.dist));
 });
 
@@ -103,7 +111,7 @@ gulp.task('clean', function(done) {
 gulp.task('dist', function(done) {
     runSequence(
         'clean',
-        ['vendor-scripts', 'vendor-styles', 'scripts', 'styles', 'index', 'html'],
+        ['vendor-scripts', 'vendor-styles', 'scripts', 'styles', 'index', 'cname', 'html'],
         done
     );
 });
