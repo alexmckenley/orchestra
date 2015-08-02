@@ -7,6 +7,7 @@ var concat         = require('gulp-concat'),
     rename         = require('gulp-rename'),
     mainBowerFiles = require('main-bower-files'),
     minifyCss      = require('gulp-minify-css'),
+    os             = require('os'),
     runSequence    = require('run-sequence'),
     sass           = require('gulp-sass'),
     templateCache  = require('gulp-angular-templatecache'),
@@ -147,12 +148,22 @@ gulp.task('minifyCss', function() {
 });
 
 /**
+ * Copy root files
+ */
+gulp.task('rootFiles', function() {
+    return gulp
+        .src(paths.build + '/**/*')
+        .pipe(gulp.dest(paths.dist));
+});
+
+/**
  * Post to gh-pages
  */
 gulp.task('gh-pages', function() {
-    return gulp.src(paths.build + '/**/*')
+    return gulp.src(paths.dist + '/**/*')
         .pipe(ghPages({
-            origin: 'deini',
+            cacheDir: os.tmpdir() + '/randy',
+            remoteUrl: 'git@github.com:deini/orchestra.git',
             force: true
         }));
 });
@@ -163,7 +174,8 @@ gulp.task('gh-pages', function() {
 gulp.task('release', function(done) {
     runSequence(
         'build',
-        ['uglify', 'minifyCss'],
+        ['uglify', 'minifyCss', 'rootFiles'],
+        'gh-pages',
         done
     );
 });
