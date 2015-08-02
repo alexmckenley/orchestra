@@ -48,7 +48,7 @@
             function findPort(portToTry, deferred, options) {
                 deferred = deferred || $q.defer();
                 options = options || _.merge({}, SPOTIFY.DEFAULT_AJAX_OPTIONS, {
-                    url: SPOTIFY.HOST + port + SPOTIFY.TOKEN_PATH
+                    url: SPOTIFY.HOST + portToTry + SPOTIFY.TOKEN_PATH
                 });
 
                 makeRequest(options)

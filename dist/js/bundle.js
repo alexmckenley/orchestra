@@ -86,6 +86,58 @@ angular.module('orchestra.constants', [])
     'use strict';
 
     angular
+        .module('orchestra.home.controller', [
+            'orchestra.auth.service'
+        ])
+        .controller('HomeController', HomeController);
+
+    function HomeController($state, auth) {
+        var ctrl = this;
+
+        ctrl.createChannel = createChannel;
+
+        function createChannel() {
+            $state.go('orchestra.channel', { channelId: auth.getUser().uid });
+        }
+    }
+})();
+
+(function() {
+    'use strict';
+
+    angular
+        .module('orchestra.home', [
+            'orchestra.home.state'
+        ]);
+})();
+(function() {
+    'use strict';
+
+    angular
+        .module('orchestra.home.state', [
+            'orchestra.home.controller',
+            'orchestra.templates',
+            'ui.router'
+        ])
+        .config(homeState);
+
+    function homeState($stateProvider) {
+        $stateProvider
+            .state('orchestra.home', {
+                url: '/',
+                views: {
+                    'main@': {
+                        templateUrl: 'home/home.tpl.html',
+                        controller: 'HomeController as homeController'
+                    }
+                }
+            });
+    }
+})();
+(function() {
+    'use strict';
+
+    angular
         .module('orchestra.channel.controller', [
             'firebase',
             'orchestra.auth.service',
@@ -176,58 +228,6 @@ angular.module('orchestra.constants', [])
     'use strict';
 
     angular
-        .module('orchestra.home.controller', [
-            'orchestra.auth.service'
-        ])
-        .controller('HomeController', HomeController);
-
-    function HomeController($state, auth) {
-        var ctrl = this;
-
-        ctrl.createChannel = createChannel;
-
-        function createChannel() {
-            $state.go('orchestra.channel', { channelId: auth.getUser().uid });
-        }
-    }
-})();
-
-(function() {
-    'use strict';
-
-    angular
-        .module('orchestra.home', [
-            'orchestra.home.state'
-        ]);
-})();
-(function() {
-    'use strict';
-
-    angular
-        .module('orchestra.home.state', [
-            'orchestra.home.controller',
-            'orchestra.templates',
-            'ui.router'
-        ])
-        .config(homeState);
-
-    function homeState($stateProvider) {
-        $stateProvider
-            .state('orchestra.home', {
-                url: '/',
-                views: {
-                    'main@': {
-                        templateUrl: 'home/home.tpl.html',
-                        controller: 'HomeController as homeController'
-                    }
-                }
-            });
-    }
-})();
-(function() {
-    'use strict';
-
-    angular
         .module('orchestra.auth.service', [
             'firebase',
             'orchestra.firebase.service'
@@ -253,6 +253,32 @@ angular.module('orchestra.constants', [])
                 }
 
                 return auth.$authAnonymously();
+            }
+
+            return service;
+        });
+})();
+
+(function() {
+    'use strict';
+
+    angular
+        .module('orchestra.firebase.service', [
+            'firebase'
+        ])
+        .factory('firebase', function firebaseService($firebaseObject) {
+            var reference = new Firebase('https://ammo-sync.firebaseio.com/'),
+                service = {
+                    getReference: getReference,
+                    getChannel: getChannel
+                };
+
+            function getChannel(id) {
+                return $firebaseObject(reference.child('channels').child(id));
+            }
+
+            function getReference() {
+                return reference;
             }
 
             return service;
@@ -339,32 +365,6 @@ angular.module('orchestra.constants', [])
     'use strict';
 
     angular
-        .module('orchestra.firebase.service', [
-            'firebase'
-        ])
-        .factory('firebase', function firebaseService($firebaseObject) {
-            var reference = new Firebase('https://ammo-sync.firebaseio.com/'),
-                service = {
-                    getReference: getReference,
-                    getChannel: getChannel
-                };
-
-            function getChannel(id) {
-                return $firebaseObject(reference.child('channels').child(id));
-            }
-
-            function getReference() {
-                return reference;
-            }
-
-            return service;
-        });
-})();
-
-(function() {
-    'use strict';
-
-    angular
         .module('orchestra.spotify.service', [
             'orchestra.constants',
             'orchestra.time.service'
@@ -411,7 +411,7 @@ angular.module('orchestra.constants', [])
             function findPort(portToTry, deferred, options) {
                 deferred = deferred || $q.defer();
                 options = options || _.merge({}, SPOTIFY.DEFAULT_AJAX_OPTIONS, {
-                    url: SPOTIFY.HOST + port + SPOTIFY.TOKEN_PATH
+                    url: SPOTIFY.HOST + portToTry + SPOTIFY.TOKEN_PATH
                 });
 
                 makeRequest(options)
