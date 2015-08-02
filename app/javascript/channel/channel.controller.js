@@ -51,8 +51,8 @@
 
             $scope.$watch(function songStatus() {
                 return $scope.currentStatus.song.url;
-            }, function songStatusChanged(newValue) {
-                player.play(newValue);
+            }, function songStatusChanged() {
+                player.play($scope.currentStatus.song);
             });
         }
 
