@@ -1,2 +1,2 @@
-angular.module("orchestra.templates", []).run(["$templateCache", function($templateCache) {$templateCache.put("channel/channel.tpl.html","<h1>Channel Template!</h1>\n<h2>{{ currentStatus }}</h2>\n");
-$templateCache.put("home/home.tpl.html","<div>\n    HOME Template\n    <button ng-click=\"homeController.createChannel()\">PLAY</button>\n</div>\n");}]);
+angular.module("orchestra.templates", []).run(["$templateCache", function($templateCache) {$templateCache.put("home/home.tpl.html","<div>\n    HOME Template\n    <button ng-click=\"homeController.createChannel()\">PLAY</button>\n</div>\n");
+$templateCache.put("channel/channel.tpl.html","<h1>Channel Template!</h1>\n<h2>{{ currentStatus }}</h2>\n");}]);
