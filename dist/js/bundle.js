@@ -102,18 +102,11 @@ angular.module('orchestra.constants', [])
         ctrl.channelId = $stateParams.channelId;
         ctrl.isAdmin = auth.getUser().uid === $stateParams.channelId;
 
-<<<<<<< HEAD
-        isAdmin = auth.getUser().uid === $stateParams.channelId;
         $scope.channel = {
             currentStatus: {
                 playing: false,
                 song: {}
             }
-=======
-        $scope.currentStatus = {
-            playing: false,
-            song: {}
->>>>>>> The Dot.
         };
 
         // Using scope for Firebase's 3way binding, no controller as :(
@@ -319,6 +312,74 @@ angular.module('orchestra.constants', [])
     'use strict';
 
     angular
+        .module('orchestra.player.service', [
+            'orchestra.constants',
+            'orchestra.spotify.service'
+        ])
+        .factory('player', function playerService(spotify) {
+            var service = {
+                    getCurrentStatus: getCurrentStatus,
+                    pause: pause,
+                    play: play,
+                    setCurrentStatus: setCurrentStatus,
+                    status: status
+                },
+                currentStatus = {
+                    playing: false,
+                    playingPosition: 0,
+                    song: {
+                        name: null,
+                        artist: null,
+                        url: null
+                    }
+                };
+
+            function getCurrentStatus() {
+                return currentStatus;
+            }
+
+            function pause() {
+                spotify.pause()
+                    .then(function pauseSuccess(data) {
+                        setCurrentStatus(data);
+                    });
+            }
+
+            function play(song, timeInSeconds) {
+                spotify.play(song, timeInSeconds)
+                    .then(function playSuccess(data) {
+                        setCurrentStatus(data);
+                    });
+            }
+
+            function status() {
+                spotify.status()
+                    .then(function statusSuccesss(data) {
+                        setCurrentStatus(data);
+                    });
+            }
+
+            function setCurrentStatus(data) {
+                var song = data.track;
+
+                currentStatus.playing = data.playing;
+
+                if (currentStatus.playing) {
+                    currentStatus.song.name = song.track_resource.name;
+                    currentStatus.song.url = song.track_resource.uri;
+                    currentStatus.song.artist = song.artist_resource.name;
+                    currentStatus.playingPosition = data.playing_position;
+                }
+            }
+
+            return service;
+        });
+})();
+
+(function() {
+    'use strict';
+
+    angular
         .module('orchestra.spotify.service', [
             'orchestra.constants',
             'orchestra.time.service'
@@ -496,72 +557,4 @@ angular
 
         return service;
     });
-})();
-
-(function() {
-    'use strict';
-
-    angular
-        .module('orchestra.player.service', [
-            'orchestra.constants',
-            'orchestra.spotify.service'
-        ])
-        .factory('player', function playerService(spotify) {
-            var service = {
-                    getCurrentStatus: getCurrentStatus,
-                    pause: pause,
-                    play: play,
-                    setCurrentStatus: setCurrentStatus,
-                    status: status
-                },
-                currentStatus = {
-                    playing: false,
-                    playingPosition: 0,
-                    song: {
-                        name: null,
-                        artist: null,
-                        url: null
-                    }
-                };
-
-            function getCurrentStatus() {
-                return currentStatus;
-            }
-
-            function pause() {
-                spotify.pause()
-                    .then(function pauseSuccess(data) {
-                        setCurrentStatus(data);
-                    });
-            }
-
-            function play(song, timeInSeconds) {
-                spotify.play(song, timeInSeconds)
-                    .then(function playSuccess(data) {
-                        setCurrentStatus(data);
-                    });
-            }
-
-            function status() {
-                spotify.status()
-                    .then(function statusSuccesss(data) {
-                        setCurrentStatus(data);
-                    });
-            }
-
-            function setCurrentStatus(data) {
-                var song = data.track;
-
-                currentStatus.playing = data.playing;
-
-                if (currentStatus.playing) {
-                    currentStatus.song.name = song.track_resource.name;
-                    currentStatus.song.url = song.track_resource.uri;
-                    currentStatus.song.artist = song.artist_resource.name;
-                    currentStatus.playingPosition = data.playing_position;
-                }
-            }
-
-            return service;
-        });
 })();
