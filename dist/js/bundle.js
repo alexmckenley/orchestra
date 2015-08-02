@@ -97,7 +97,10 @@ angular.module('orchestra.constants', [])
         .controller('ChannelController', ChannelController);
 
     function ChannelController($interval, $scope, $stateParams, auth, firebase, player, spotify) {
-        var isAdmin;
+        var ctrl = this,
+            isAdmin;
+
+        ctrl.channelId = $stateParams.channelId;
 
         isAdmin = auth.getUser().uid === $stateParams.channelId;
         $scope.currentStatus = {

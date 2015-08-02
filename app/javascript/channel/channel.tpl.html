@@ -1,2 +1,18 @@
-<h1>Channel Template!</h1>
-<h2>{{ currentStatus }}</h2>
+<h1>Now Playing</h1>
+<h5>Channel: {{ channelController.channelId }}</h5>
+<table class="u-full-width">
+  <thead>
+    <tr>
+      <th>Title</th>
+      <th>Artist</th>
+      <th>Spotify URL</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>{{ currentStatus.song.name }}</td>
+      <td>{{ currentStatus.song.artist }}</td>
+      <td><a ng-href="{{ currentStatus.song.url}}">Spotify URL</td>
+    </tr>
+  </tbody>
+</table>

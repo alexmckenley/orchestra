@@ -1,8 +1,11 @@
+@import "shame/shame";
 @import "home/colors";
 @import "home/home";
-// @import "home/glyphs";
 
-.orchestra-container,
+.orchestra-container {
+	padding: 3rem;
+}
+
 .orchestra-main {
   min-height: 100%;
 }
