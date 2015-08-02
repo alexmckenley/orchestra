@@ -889,3 +889,8 @@ md-input-container:not(.md-input-invalid).md-input-focused label {
 
 .orchestra-main {
   min-height: 100%; }
+
+.channel-shareArrow {
+  display: inline-block;
+  width: 45px;
+  padding-left: 1rem; }
