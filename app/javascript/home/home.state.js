@@ -12,7 +12,7 @@
     function homeState($stateProvider) {
         $stateProvider
             .state('orchestra.home', {
-                url: '',
+                url: '/',
                 views: {
                     'main@': {
                         templateUrl: 'home/home.tpl.html',

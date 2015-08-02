@@ -2,12 +2,10 @@
   "name": "orchestra",
   "version": "0.0.1",
   "description": "Orchestra for Spotify",
-  "scripts": {
-  },
+  "scripts": {},
   "author": "Daniel Almaguer",
   "license": "MIT",
-  "dependencies": {
-  },
+  "dependencies": {},
   "devDependencies": {
     "del": "^1.2.0",
     "grunt": "^0.4.5",
@@ -15,6 +13,7 @@
     "gulp": "^3.9.0",
     "gulp-angular-templatecache": "^1.7.0",
     "gulp-concat": "^2.6.0",
+    "gulp-connect": "^2.2.0",
     "gulp-sass": "^2.0.4",
     "main-bower-files": "^2.9.0",
     "run-sequence": "^1.1.2"

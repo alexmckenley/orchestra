@@ -1,5 +1,6 @@
 // Dependencies
 var concat         = require('gulp-concat'),
+    connect        = require('gulp-connect'),
     del            = require('del'),
     gulp           = require('gulp'),
     mainBowerFiles = require('main-bower-files'),
@@ -23,7 +24,8 @@ gulp.task('scripts', function() {
     return gulp
         .src(paths.scripts)
         .pipe(concat('bundle.js'))
-        .pipe(gulp.dest(paths.dist + '/js'));
+        .pipe(gulp.dest(paths.dist + '/js'))
+        .pipe(connect.reload());
 });
 
 /**
@@ -33,7 +35,8 @@ gulp.task('vendor-scripts', function() {
     return gulp
         .src(mainBowerFiles('**/*.js'), { base: 'bower_components' })
         .pipe(concat('vendor.js'))
-        .pipe(gulp.dest(paths.dist + '/js'));
+        .pipe(gulp.dest(paths.dist + '/js'))
+        .pipe(connect.reload());
 });
 
 /**
@@ -43,7 +46,8 @@ gulp.task('vendor-styles', function() {
     return gulp
         .src(mainBowerFiles('**/*.css'), { base: 'bower_components' })
         .pipe(concat('vendor.css'))
-        .pipe(gulp.dest(paths.dist + '/css'));
+        .pipe(gulp.dest(paths.dist + '/css'))
+        .pipe(connect.reload());
 });
 
 /**
@@ -53,7 +57,20 @@ gulp.task('styles', function() {
     return gulp
         .src(paths.styles)
         .pipe(sass())
-        .pipe(gulp.dest(paths.dist + '/css'));
+        .pipe(gulp.dest(paths.dist + '/css'))
+        .pipe(connect.reload());
+});
+
+/**
+ * Setup Web Server
+ */
+gulp.task('connect', function() {
+    return connect.server({
+        root: paths.dist,
+        livereload: true,
+        port: 8888,
+        fallback: paths.index[0]
+    });
 });
 
 /**
@@ -72,7 +89,8 @@ gulp.task('html', function() {
             standalone: true,
             module: 'orchestra.templates'
         }))
-        .pipe(gulp.dest(paths.dist + '/js'));
+        .pipe(gulp.dest(paths.dist + '/js'))
+        .pipe(connect.reload());
 });
 
 gulp.task('clean', function(done) {
@@ -102,4 +120,4 @@ gulp.task('watch', function() {
 /**
  * Default task.
  */
-gulp.task('default', ['watch', 'dist']);
+gulp.task('default', ['watch', 'dist', 'connect']);

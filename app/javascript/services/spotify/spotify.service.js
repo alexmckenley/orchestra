@@ -9,7 +9,6 @@
         .factory('spotify', function spotifyService($q, $timeout, SPOTIFY, time) {
             var initialized = false,
                 service = {
-                    initialize: initialize,
                     isReady: isReady,
                     pause: pause,
                     play: play,
@@ -18,8 +17,12 @@
                 port = SPOTIFY.STARTING_PORT,
                 tokens = {};
 
-            function initialize() {
+            function makeSpotifyReady() {
                 var deferred = $q.defer();
+
+                if (service.isReady()) {
+                    return $q.when();
+                }
 
                 rejectAfterTimer(deferred);
 
@@ -73,21 +76,21 @@
             }
 
             function play(song, timeInSeconds) {
-                return makeRequest({
+                return makeAuthorizedRequest({
                     url: SPOTIFY.HOST + port + SPOTIFY.REMOTE_PATH + '/play.json',
                     params: { uri: song.url + '#' + time.convertTime(timeInSeconds) }
                 });
             }
 
             function pause() {
-                return makeRequest({
+                return makeAuthorizedRequest({
                     url: SPOTIFY.HOST + port + SPOTIFY.REMOTE_PATH + '/pause.json',
                     params: { pause: true }
                 });
             }
 
             function status() {
-                return makeRequest({
+                return makeAuthorizedRequest({
                     url: SPOTIFY.HOST + port + SPOTIFY.REMOTE_PATH + '/status.json'
                 });
             }
@@ -96,9 +99,16 @@
                 return initialized;
             }
 
+            function makeAuthorizedRequest(options) {
+                return makeSpotifyReady()
+                    .then(function makeSpotifyReadySuccess() {
+                        return makeRequest(options);
+                    });
+            }
+
             function makeRequest(options) {
                 var deferred = $q.defer(),
-                    extensionId = 'clfgcnmgjjgnebpcmhpnlomeodloinin';
+                    extensionId = SPOTIFY.EXTENSION_ID;
 
                 options = _.merge(options, SPOTIFY.DEFAULT_AJAX_OPTIONS, {
                     params: tokens
@@ -109,11 +119,9 @@
                 chrome.runtime.sendMessage(extensionId, options, function(response) {
                     // .error .data
                     if (response.error) {
-                        console.log(response.error);
                         deferred.reject(response.error);
                     }
 
-                    console.log(response.data);
                     deferred.resolve(response.data);
                 });
 

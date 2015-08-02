@@ -8,9 +8,11 @@
         ])
         .factory('player', function playerService(spotify) {
             var service = {
+                    getCurrentStatus: getCurrentStatus,
                     pause: pause,
                     play: play,
                     seek: seek,
+                    setCurrentStatus: setCurrentStatus,
                     status: status
                 },
                 currentStatus = {
@@ -22,6 +24,10 @@
                         url: null
                     }
                 };
+
+            function getCurrentStatus() {
+                return currentStatus;
+            }
 
             function pause() {
                 spotify.pause()

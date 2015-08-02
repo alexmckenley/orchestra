@@ -13,7 +13,7 @@
         console.log('channel state');
         $stateProvider
             .state('orchestra.channel', {
-                url: 'channel',
+                url: '/channel/:channelId',
                 views: {
                     'main@': {
                         templateUrl: 'channel/channel.tpl.html',

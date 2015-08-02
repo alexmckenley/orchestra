@@ -7,6 +7,6 @@
 
     function appConfig($locationProvider) {
         // Enabling html5 pushstate
-        //$locationProvider.html5Mode(true);
+        $locationProvider.html5Mode(true);
     }
 })();

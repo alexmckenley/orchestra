@@ -7,7 +7,7 @@
 
     function appConfig($locationProvider) {
         // Enabling html5 pushstate
-        //$locationProvider.html5Mode(true);
+        $locationProvider.html5Mode(true);
     }
 })();
 angular.module('orchestra.constants', [])
@@ -18,6 +18,7 @@ angular.module('orchestra.constants', [])
             },
             method: 'GET'
         },
+        EXTENSION_ID: 'opejcnahjldejgcoegkepenfbomiejic',
         HOST: 'https://tpcaahshvs.spotilocal.com:',
         OAUTH_URI: 'http://open.spotify.com/token',
         REMOTE_PATH: '/remote',
@@ -68,7 +69,7 @@ angular.module('orchestra.constants', [])
 
     angular
         .module('orchestra.app.state', [
-            'orchestra.home.controller',
+            'orchestra.spotify.service',
             'orchestra.templates',
             'ui.router'
         ])
@@ -85,89 +86,56 @@ angular.module('orchestra.constants', [])
     'use strict';
 
     angular
-        .module('orchestra.home.controller', [
+        .module('orchestra.channel.controller', [
             'firebase',
             'orchestra.auth.service',
             'orchestra.firebase.service',
             'orchestra.player.service',
-            'orchestra.spotify.service'
-        ])
-        .controller('HomeController', HomeController);
-
-    function HomeController($firebaseObject, $scope, $state, auth, firebase, player, spotify) {
-        var ctrl = this,
-            ref = firebase.getReference();
-
-        ctrl.spotifyIsReady = spotify.isReady;
-
-        spotify.initialize();
-
-        auth.login()
-            .then(function authSuccess(authData) {
-                console.log('Logged in as:', authData);
-                setCurrentStatus(authData);
-            })
-            .catch(function authCatch(error) {
-                console.log('Authentication failed:', error);
-            });
-
-        function setCurrentStatus(authData) {
-            $firebaseObject(ref.child('channels').child(authData.uid)).$bindTo($scope, 'currentStatus');
-        }
-
-        ctrl.randyPlay = randyPlay;
-
-        function randyPlay() {
-            $state.go('orchestra.channel');
-            //player.play({ url: 'spotify:track:4VPpZXXeZHfpzvHNaPjLcF' });
-        }
-    }
-})();
-
-(function() {
-    'use strict';
-
-    angular
-        .module('orchestra.home', [
-            'orchestra.home.state'
-        ]);
-})();
-(function() {
-    'use strict';
-
-    angular
-        .module('orchestra.home.state', [
-            'orchestra.home.controller',
-            'orchestra.templates',
+            'orchestra.spotify.service',
             'ui.router'
         ])
-        .config(homeState);
-
-    function homeState($stateProvider) {
-        $stateProvider
-            .state('orchestra.home', {
-                url: '',
-                views: {
-                    'main@': {
-                        templateUrl: 'home/home.tpl.html',
-                        controller: 'HomeController as homeController'
-                    }
-                }
-            });
-    }
-})();
-(function() {
-    'use strict';
-
-    angular
-        .module('orchestra.channel.controller', [])
         .controller('ChannelController', ChannelController);
 
-    function ChannelController() {
-        var ctrl = this;
+    function ChannelController($interval, $scope, $stateParams, auth, firebase, player, spotify) {
+        var isAdmin;
 
-        ctrl.hello = 'Hello World';
-        console.log('CHANNEL CONTROLLER');
+        isAdmin = auth.getUser().uid === $stateParams.channelId;
+
+        // Using scope for Firebase's 3way binding, no controller as :(
+        firebase.getChannel($stateParams.channelId).$bindTo($scope, 'currentStatus');
+
+        if (isAdmin) {
+            pollSpotifyStatus();
+        } else {
+            subscribeToUpdates();
+        }
+
+        function pollSpotifyStatus() {
+            $interval(function pollInterval() {
+                spotify.status()
+                    .then(function pollIntervalSuccess(data) {
+                        player.setCurrentStatus(data);
+                        $scope.currentStatus = player.getCurrentStatus();
+                    });
+            }, 2000);
+        }
+
+        function subscribeToUpdates() {
+            $scope.$watch(function playingStatus() {
+                return $scope.currentStatus.playing;
+            }, function playingStatusChanged(newValue) {
+                if (!newValue) {
+                    player.pause();
+                }
+            });
+
+            $scope.$watch(function songStatus() {
+                return $scope.currentStatus.song.url;
+            }, function songStatusChanged(newValue) {
+                player.play(newValue);
+            });
+        }
+
     }
 })();
 
@@ -194,11 +162,63 @@ angular.module('orchestra.constants', [])
         console.log('channel state');
         $stateProvider
             .state('orchestra.channel', {
-                url: 'channel',
+                url: '/channel/:channelId',
                 views: {
                     'main@': {
                         templateUrl: 'channel/channel.tpl.html',
                         controller: 'ChannelController as channelController'
+                    }
+                }
+            });
+    }
+})();
+(function() {
+    'use strict';
+
+    angular
+        .module('orchestra.home.controller', [
+            'orchestra.auth.service'
+        ])
+        .controller('HomeController', HomeController);
+
+    function HomeController($state, auth) {
+        var ctrl = this;
+
+        ctrl.createChannel = createChannel;
+
+        function createChannel() {
+            $state.go('orchestra.channel', { channelId: auth.getUser().uid });
+        }
+    }
+})();
+
+(function() {
+    'use strict';
+
+    angular
+        .module('orchestra.home', [
+            'orchestra.home.state'
+        ]);
+})();
+(function() {
+    'use strict';
+
+    angular
+        .module('orchestra.home.state', [
+            'orchestra.home.controller',
+            'orchestra.templates',
+            'ui.router'
+        ])
+        .config(homeState);
+
+    function homeState($stateProvider) {
+        $stateProvider
+            .state('orchestra.home', {
+                url: '/',
+                views: {
+                    'main@': {
+                        templateUrl: 'home/home.tpl.html',
+                        controller: 'HomeController as homeController'
                     }
                 }
             });
@@ -242,6 +262,108 @@ angular.module('orchestra.constants', [])
     'use strict';
 
     angular
+        .module('orchestra.firebase.service', [
+            'firebase'
+        ])
+        .factory('firebase', function firebaseService($firebaseObject) {
+            var reference = new Firebase('https://ammo-sync.firebaseio.com/'),
+                service = {
+                    getReference: getReference,
+                    getChannel: getChannel
+                };
+
+            function getChannel(id) {
+                return $firebaseObject(reference.child('channels').child(id));
+            }
+
+            function getReference() {
+                return reference;
+            }
+
+            return service;
+        });
+})();
+
+(function() {
+    'use strict';
+
+    angular
+        .module('orchestra.player.service', [
+            'orchestra.constants',
+            'orchestra.spotify.service'
+        ])
+        .factory('player', function playerService(spotify) {
+            var service = {
+                    getCurrentStatus: getCurrentStatus,
+                    pause: pause,
+                    play: play,
+                    seek: seek,
+                    setCurrentStatus: setCurrentStatus,
+                    status: status
+                },
+                currentStatus = {
+                    playing: false,
+                    playingPosition: 0,
+                    song: {
+                        name: null,
+                        artist: null,
+                        url: null
+                    }
+                };
+
+            function getCurrentStatus() {
+                return currentStatus;
+            }
+
+            function pause() {
+                spotify.pause()
+                    .then(function pauseSuccess(data) {
+                        setCurrentStatus(data);
+                    });
+            }
+
+            function play(song) {
+                spotify.play(song)
+                    .then(function playSuccess(data) {
+                        setCurrentStatus(data);
+                    });
+            }
+
+            function status() {
+                spotify.status()
+                    .then(function statusSuccesss(data) {
+                        setCurrentStatus(data);
+                    });
+            }
+
+            function seek(song, time) {
+                spotify.play(song, time)
+                    .then(function seekSuccess(data) {
+                        setCurrentStatus(data);
+                    });
+            }
+
+            function setCurrentStatus(data) {
+                var song = data.track;
+
+                currentStatus.playing = data.playing;
+
+                if (currentStatus.playing) {
+                    currentStatus.song.name = song.track_resource.name;
+                    currentStatus.song.url = song.track_resource.uri;
+                    currentStatus.song.artist = song.artist_resource.name;
+                    currentStatus.playingPosition = data.playing_position;
+                }
+            }
+
+            return service;
+        });
+})();
+
+(function() {
+    'use strict';
+
+    angular
         .module('orchestra.spotify.service', [
             'orchestra.constants',
             'orchestra.time.service'
@@ -249,7 +371,6 @@ angular.module('orchestra.constants', [])
         .factory('spotify', function spotifyService($q, $timeout, SPOTIFY, time) {
             var initialized = false,
                 service = {
-                    initialize: initialize,
                     isReady: isReady,
                     pause: pause,
                     play: play,
@@ -258,8 +379,12 @@ angular.module('orchestra.constants', [])
                 port = SPOTIFY.STARTING_PORT,
                 tokens = {};
 
-            function initialize() {
+            function makeSpotifyReady() {
                 var deferred = $q.defer();
+
+                if (service.isReady()) {
+                    return $q.when();
+                }
 
                 rejectAfterTimer(deferred);
 
@@ -313,21 +438,21 @@ angular.module('orchestra.constants', [])
             }
 
             function play(song, timeInSeconds) {
-                return makeRequest({
+                return makeAuthorizedRequest({
                     url: SPOTIFY.HOST + port + SPOTIFY.REMOTE_PATH + '/play.json',
                     params: { uri: song.url + '#' + time.convertTime(timeInSeconds) }
                 });
             }
 
             function pause() {
-                return makeRequest({
+                return makeAuthorizedRequest({
                     url: SPOTIFY.HOST + port + SPOTIFY.REMOTE_PATH + '/pause.json',
                     params: { pause: true }
                 });
             }
 
             function status() {
-                return makeRequest({
+                return makeAuthorizedRequest({
                     url: SPOTIFY.HOST + port + SPOTIFY.REMOTE_PATH + '/status.json'
                 });
             }
@@ -336,9 +461,16 @@ angular.module('orchestra.constants', [])
                 return initialized;
             }
 
+            function makeAuthorizedRequest(options) {
+                return makeSpotifyReady()
+                    .then(function makeSpotifyReadySuccess() {
+                        return makeRequest(options);
+                    });
+            }
+
             function makeRequest(options) {
                 var deferred = $q.defer(),
-                    extensionId = 'clfgcnmgjjgnebpcmhpnlomeodloinin';
+                    extensionId = SPOTIFY.EXTENSION_ID;
 
                 options = _.merge(options, SPOTIFY.DEFAULT_AJAX_OPTIONS, {
                     params: tokens
@@ -349,11 +481,9 @@ angular.module('orchestra.constants', [])
                 chrome.runtime.sendMessage(extensionId, options, function(response) {
                     // .error .data
                     if (response.error) {
-                        console.log(response.error);
                         deferred.reject(response.error);
                     }
 
-                    console.log(response.data);
                     deferred.resolve(response.data);
                 });
 
@@ -365,27 +495,6 @@ angular.module('orchestra.constants', [])
                 $timeout(function cancelFindClient() {
                     deferred.reject('Spotify Client not Found');
                 }, 2000);
-            }
-
-            return service;
-        });
-})();
-
-(function() {
-    'use strict';
-
-    angular
-        .module('orchestra.firebase.service', [
-            'firebase'
-        ])
-        .factory('firebase', function firebaseService() {
-            var reference = new Firebase('https://ammo-sync.firebaseio.com/'),
-                service = {
-                    getReference: getReference
-                };
-
-            function getReference() {
-                return reference;
             }
 
             return service;
@@ -424,74 +533,4 @@ angular
 
         return service;
     });
-})();
-
-(function() {
-    'use strict';
-
-    angular
-        .module('orchestra.player.service', [
-            'orchestra.constants',
-            'orchestra.spotify.service'
-        ])
-        .factory('player', function playerService(spotify) {
-            var service = {
-                    pause: pause,
-                    play: play,
-                    seek: seek,
-                    status: status
-                },
-                currentStatus = {
-                    playing: false,
-                    playingPosition: 0,
-                    song: {
-                        name: null,
-                        artist: null,
-                        url: null
-                    }
-                };
-
-            function pause() {
-                spotify.pause()
-                    .then(function pauseSuccess(data) {
-                        setCurrentStatus(data);
-                    });
-            }
-
-            function play(song) {
-                spotify.play(song)
-                    .then(function playSuccess(data) {
-                        setCurrentStatus(data);
-                    });
-            }
-
-            function status() {
-                spotify.status()
-                    .then(function statusSuccesss(data) {
-                        setCurrentStatus(data);
-                    });
-            }
-
-            function seek(song, time) {
-                spotify.play(song, time)
-                    .then(function seekSuccess(data) {
-                        setCurrentStatus(data);
-                    });
-            }
-
-            function setCurrentStatus(data) {
-                var song = data.track;
-
-                currentStatus.playing = data.playing;
-
-                if (currentStatus.playing) {
-                    currentStatus.song.name = song.track_resource.name;
-                    currentStatus.song.url = song.track_resource.uri;
-                    currentStatus.song.artist = song.artist_resource.name;
-                    currentStatus.playingPosition = data.playing_position;
-                }
-            }
-
-            return service;
-        });
 })();

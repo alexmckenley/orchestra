@@ -3,7 +3,7 @@
 
     angular
         .module('orchestra.app.state', [
-            'orchestra.home.controller',
+            'orchestra.spotify.service',
             'orchestra.templates',
             'ui.router'
         ])

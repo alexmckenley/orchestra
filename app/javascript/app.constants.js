@@ -6,6 +6,7 @@ angular.module('orchestra.constants', [])
             },
             method: 'GET'
         },
+        EXTENSION_ID: 'opejcnahjldejgcoegkepenfbomiejic',
         HOST: 'https://tpcaahshvs.spotilocal.com:',
         OAUTH_URI: 'http://open.spotify.com/token',
         REMOTE_PATH: '/remote',
