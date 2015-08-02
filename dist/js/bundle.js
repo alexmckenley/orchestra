@@ -100,6 +100,10 @@ angular.module('orchestra.constants', [])
         var isAdmin;
 
         isAdmin = auth.getUser().uid === $stateParams.channelId;
+        $scope.currentStatus = {
+            playing: false,
+            song: {}
+        };
 
         // Using scope for Firebase's 3way binding, no controller as :(
         firebase.getChannel($stateParams.channelId).$bindTo($scope, 'currentStatus');
@@ -263,32 +267,6 @@ angular.module('orchestra.constants', [])
     'use strict';
 
     angular
-        .module('orchestra.firebase.service', [
-            'firebase'
-        ])
-        .factory('firebase', function firebaseService($firebaseObject) {
-            var reference = new Firebase('https://ammo-sync.firebaseio.com/'),
-                service = {
-                    getReference: getReference,
-                    getChannel: getChannel
-                };
-
-            function getChannel(id) {
-                return $firebaseObject(reference.child('channels').child(id));
-            }
-
-            function getReference() {
-                return reference;
-            }
-
-            return service;
-        });
-})();
-
-(function() {
-    'use strict';
-
-    angular
         .module('orchestra.player.service', [
             'orchestra.constants',
             'orchestra.spotify.service'
@@ -355,6 +333,32 @@ angular.module('orchestra.constants', [])
                     currentStatus.song.artist = song.artist_resource.name;
                     currentStatus.playingPosition = data.playing_position;
                 }
+            }
+
+            return service;
+        });
+})();
+
+(function() {
+    'use strict';
+
+    angular
+        .module('orchestra.firebase.service', [
+            'firebase'
+        ])
+        .factory('firebase', function firebaseService($firebaseObject) {
+            var reference = new Firebase('https://ammo-sync.firebaseio.com/'),
+                service = {
+                    getReference: getReference,
+                    getChannel: getChannel
+                };
+
+            function getChannel(id) {
+                return $firebaseObject(reference.child('channels').child(id));
+            }
+
+            function getReference() {
+                return reference;
             }
 
             return service;

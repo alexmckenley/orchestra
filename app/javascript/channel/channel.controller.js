@@ -16,6 +16,10 @@
         var isAdmin;
 
         isAdmin = auth.getUser().uid === $stateParams.channelId;
+        $scope.currentStatus = {
+            playing: false,
+            song: {}
+        };
 
         // Using scope for Firebase's 3way binding, no controller as :(
         firebase.getChannel($stateParams.channelId).$bindTo($scope, 'currentStatus');
