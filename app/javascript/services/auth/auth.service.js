@@ -15,6 +15,7 @@
                 };
 
             auth = $firebaseAuth(reference);
+            login();
 
             function getUser() {
                 return reference.getAuth();
