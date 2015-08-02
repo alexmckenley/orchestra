@@ -152,7 +152,8 @@ gulp.task('minifyCss', function() {
 gulp.task('gh-pages', function() {
     return gulp.src(paths.build + '/**/*')
         .pipe(ghPages({
-            origin: 'deini'
+            origin: 'deini',
+            force: true
         }));
 });
 
