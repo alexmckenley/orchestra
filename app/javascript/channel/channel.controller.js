@@ -27,7 +27,6 @@
         };
 
         // Using scope for Firebase's 3way binding, no controller as :(
-        //firebase.getChannel($stateParams.channelId).$bindTo($scope, 'currentStatus');
         firebase.getChannel($stateParams.channelId).$bindTo($scope, 'channel');
 
         if (isAdmin) {

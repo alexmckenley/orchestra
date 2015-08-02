@@ -111,7 +111,6 @@ angular.module('orchestra.constants', [])
         };
 
         // Using scope for Firebase's 3way binding, no controller as :(
-        //firebase.getChannel($stateParams.channelId).$bindTo($scope, 'currentStatus');
         firebase.getChannel($stateParams.channelId).$bindTo($scope, 'channel');
 
         if (isAdmin) {
@@ -142,12 +141,6 @@ angular.module('orchestra.constants', [])
             $scope.$watch(function songStatus() {
                 return $scope.channel.currentStatus.song.url;
             }, function songStatusChanged() {
-<<<<<<< HEAD
-                player.play($scope.currentStatus.song);
-            });
-        }
-
-=======
                 player.play($scope.channel.currentStatus.song, $scope.channel.currentStatus.playingPosition);
             });
 
@@ -167,7 +160,6 @@ angular.module('orchestra.constants', [])
         function isSameSong() {
             return $scope.channel.currentStatus.song.url === player.getCurrentStatus().song.url;
         }
->>>>>>> 41e1b60... Nested currentStatus
     }
 })();
 
@@ -386,6 +378,40 @@ angular.module('orchestra.constants', [])
 })();
 
 (function() {
+'use strict';
+
+angular
+    .module('orchestra.time.service', [])
+    .factory('time', function timeService() {
+        var service = {
+                convertTime: convertTime
+            };
+
+        // Converts seconds (number) to #M:SS string format
+        // Eg: 61 => 1:01
+        function convertTime(totalSeconds) {
+            var minutes,
+                seconds;
+
+            if (isNaN(totalSeconds)) {
+                return '';
+            }
+
+            minutes = Math.floor(totalSeconds / 60);
+            seconds = Math.floor(totalSeconds - minutes * 60);
+
+            if (seconds < 10) {
+                seconds = '0' + seconds;
+            }
+
+            return minutes + ':' + seconds;
+        }
+
+        return service;
+    });
+})();
+
+(function() {
     'use strict';
 
     angular
@@ -531,38 +557,4 @@ angular.module('orchestra.constants', [])
 
             return service;
         });
-})();
-
-(function() {
-'use strict';
-
-angular
-    .module('orchestra.time.service', [])
-    .factory('time', function timeService() {
-        var service = {
-                convertTime: convertTime
-            };
-
-        // Converts seconds (number) to #M:SS string format
-        // Eg: 61 => 1:01
-        function convertTime(totalSeconds) {
-            var minutes,
-                seconds;
-
-            if (isNaN(totalSeconds)) {
-                return '';
-            }
-
-            minutes = Math.floor(totalSeconds / 60);
-            seconds = Math.floor(totalSeconds - minutes * 60);
-
-            if (seconds < 10) {
-                seconds = '0' + seconds;
-            }
-
-            return minutes + ':' + seconds;
-        }
-
-        return service;
-    });
 })();
