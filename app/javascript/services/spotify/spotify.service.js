@@ -83,9 +83,14 @@
             }
 
             function play(song, timeInSeconds) {
+                var songId = song.url ? song.url.replace('track', 'trackset:dummy') : '';
+
                 return makeAuthorizedRequest({
                     url: SPOTIFY.HOST + port + SPOTIFY.REMOTE_PATH + '/play.json',
-                    params: { uri: song.url + '#' + time.convertTime(timeInSeconds) }
+                    params: {
+                        uri: song.url + time.convertTime(timeInSeconds),
+                        context: songId
+                    }
                 });
             }
 

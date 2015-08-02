@@ -35,8 +35,8 @@
                     });
             }
 
-            function play(song) {
-                spotify.play(song)
+            function play(song, timeInSeconds) {
+                spotify.play(song, timeInSeconds)
                     .then(function playSuccess(data) {
                         setCurrentStatus(data);
                     });
